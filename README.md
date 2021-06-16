@@ -1,2 +1,2 @@
 # labyrinth-arduino-game
-Hamiltonian path comes in handy
+Hamiltonian path comes in handy while playing games apparently
