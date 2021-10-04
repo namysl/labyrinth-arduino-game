@@ -5,15 +5,13 @@ The game is inspired by a ice puzzle from the Pokémon Ruby/Sapphire and it seem
 
 ## Arduino:
 
-In this project I used a Thumb Joystick (Iduino ST1079), 128x64 I2C SSD1306 OLED screen, a piezo buzzer, a 1000 Ω restistor and of course Arduino Uno.
+In this project I used a Thumb Joystick (Iduino ST1079), 128x64 I2C SSD1306 OLED screen, a piezo buzzer, a 1000Ω restistor and of course Arduino Uno.
 
 ## Features:
 
-* There are 5 available levels to choose in the menu
+* There are 5 levels to choose in the menu
 * There is a sound when you win or lose and when you start a level
+* You can reset a level by pressing joystick's button
 * The game itself
 
-## To do:
-
-* Exit from a level
-* New graphics
+![oled](oled_game.png?raw=true "oled_game")
