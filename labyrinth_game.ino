@@ -4,8 +4,8 @@
 #include <Adafruit_SSD1306.h>
 #include <avr/pgmspace.h>
 
-#define JOYSTICK_X 0
-#define JOYSTICK_Y 1
+#define JOYSTICK_X 1
+#define JOYSTICK_Y 0
 #define JOYSTICK_BUTTON 2
 
 #define END_GAME_LEVEL 5
@@ -28,20 +28,17 @@ int melody_gameover[] = {523, 587, 659, 698, 784, 880, 988, 1047};
 
 bool in_menu = true;
 
-int target_x[] = {10, 5, 7, 9, 10};  // goal's x axis position on levels
-int target_y[] = {1, 1, 1, 4, 4};    // goal's y axis position on levels
+int target_x[] = {10, 5, 7, 9, 10};  // marked tile/goal's x axis position on levels
+int target_y[] = {1, 1, 1, 4, 4};    // marked tile/goal's y axis position on levels
 
 int moves_to_finish[] = {36, 36, 30, 30, 32}; // on each level from 1 to 5
 
-
 int i;
 
-
-
+// i should clean this mess below
 
 int lvl_cntr = 0;
 int cntr = 0;
-
 
 unsigned char x;
 unsigned char y;
@@ -57,10 +54,11 @@ int menu_pos = 0;
 char menu_dir = 0;
 byte menu_lev = 0;
 
-
 int X_iter = 0;
 int X_arr_x[64];
 int X_arr_y[64];
+
+// i should clean this mess above...
 
 unsigned char levelx[] = {0x00, 0x00, 0x00, 0x00, 0xFF, 0x81, 0x81, 0x81, 
                           0x81, 0x81, 0x81, 0xFF, 0x00, 0x00, 0x00, 0x00};
@@ -89,7 +87,7 @@ static const unsigned char level_maps_layout [] PROGMEM = {
 static const unsigned char PROGMEM cross[] = {0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81};
 static const unsigned char PROGMEM wall[] = {0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa};
 static const unsigned char PROGMEM player[] = {0x00, 0x3c, 0x5a, 0x7e, 0x5a, 0x66, 0x3c, 0x00};
-static const unsigned char PROGMEM goal[] = {0x00, 0x18, 0x3c, 0x7e, 0x18, 0x18, 0x18, 0x18};
+static const unsigned char PROGMEM target[] = {0x00, 0x18, 0x3c, 0x7e, 0x18, 0x18, 0x18, 0x18};
 static const unsigned char PROGMEM arrow[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0xc0, 0x03, 0xc0,
                                               0x03, 0xc0, 0x03, 0xc0, 0x03, 0xc0, 0x03, 0xc0,
                                               0x03, 0xc0, 0x3f, 0xfc, 0x1f, 0xf8, 0x0f, 0xf0,
@@ -143,7 +141,7 @@ void menu_loop() {
   display.setTextColor(WHITE);
   display.setTextWrap(false);
   
-  //1 lvl -> 5 lvl
+  // 1 lvl -> 5 lvl
   for (i = 0; i < END_GAME_LEVEL; i++) {  
     int x = 64 - (i+1 < 10 ? 7 : 16) - menu_pos + i * 48;
     if (x < - 24 || x > 152) continue;
@@ -157,6 +155,34 @@ void menu_loop() {
     current_level = menu_lev;
     load_level(menu_lev);
   }
+}
+
+
+void load_level(byte l) {
+  in_menu = false;
+
+  display.clearDisplay();
+  display.fillRoundRect(0, 20, 128, 32, 30, WHITE);
+  display.setTextSize(2);
+  display.setTextColor(BLACK);
+  display.setCursor(11, 28);
+  display.print(String("good luck"));
+  display.display();
+
+  buzzer_alert(melody_goodluck, 1500, 2);
+  delay(1000);
+  
+  // load level: program memory -> ram
+  LVL lvl;
+  memcpy_P(&lvl, &levels[l], sizeof(LVL));
+  
+  // load level map: progmem -> ram
+  memcpy_P(&levelx, &level_maps_layout[lvl.l * 16], 16);
+
+  pl_x = lvl.px * 8;  // player's position
+  pl_y = lvl.py * 8;
+  pm_x = pm_y = 0;
+  delay(1000);
 }
 
 
@@ -198,7 +224,7 @@ void game_loop() {
     X_iter++;
   }
 
-  player_movement();  //aktualizuj
+  player_movement();  // update the moves
 
   display.clearDisplay();
 
@@ -213,35 +239,6 @@ void game_loop() {
   if(cntr-1 > 0) {
     game_failed();
   }
-}
-
-
-void load_level(byte l) {
-  in_menu = false;
-
-
-  display.clearDisplay();
-  display.fillRoundRect(0, 20, 128, 32, 30, WHITE);
-  display.setTextSize(2);
-  display.setTextColor(BLACK);
-  display.setCursor(11, 28);
-  display.print(String("good luck"));
-  display.display();
-
-  buzzer_alert(melody_goodluck, 1500, 2);
-  delay(1000);
-  
-  //load level: program memory -> ram
-  LVL lvl;
-  memcpy_P(&lvl, &levels[l], sizeof(LVL));
-  
-  //load level map: progmem -> ram
-  memcpy_P(&levelx, &level_maps_layout[lvl.l * 16], 16);
-
-  pl_x = lvl.px * 8;  //pozycja playera
-  pl_y = lvl.py * 8;
-  pm_x = pm_y = 0;
-  delay(1000);
 }
 
 
@@ -278,6 +275,20 @@ void game_failed() {
 }
 
 
+void game_complete() {   
+  display.fillRoundRect(0, 16, 128, 32, 30, WHITE);
+  display.setTextSize(1);
+  display.setTextColor(BLACK);
+  display.setCursor(47, 20);
+  display.println(String("level"));
+  display.setCursor(37, 35);
+  display.println(String("completed"));
+  display.display();
+  
+buzzer_alert(melody_completed, 300, (sizeof(melody_completed)/sizeof(melody_completed[0]))-1);
+}
+
+
 void end_game() {
   game_complete();
   current_level = END_GAME_LEVEL - 1;
@@ -300,20 +311,6 @@ buzzer_alert(melody_gameover, 500, (sizeof(melody_gameover)/sizeof(melody_gameov
     menu_loop();
   }
   delay(1000);
-}
-
-
-void game_complete() {   
-  display.fillRoundRect(0, 16, 128, 32, 30, WHITE);
-  display.setTextSize(1);
-  display.setTextColor(BLACK);
-  display.setCursor(47, 20);
-  display.println(String("level"));
-  display.setCursor(37, 35);
-  display.println(String("completed"));
-  display.display();
-  
-buzzer_alert(melody_completed, 300, (sizeof(melody_completed)/sizeof(melody_completed[0]))-1);
 }
 
 
@@ -359,8 +356,8 @@ void draw_player() {
 }
 
 
-//pekniete plytki
 void draw_X() {
+  // broken tiles
   for (int i = 0; i < X_iter; i++)
     {
       display.drawBitmap(X_arr_x[i], X_arr_y[i], cross, 8, 8, 1);
@@ -368,26 +365,25 @@ void draw_X() {
 }
 
 
-//goal
 void draw_target() {
-  display.drawBitmap(target_x[lvl_cntr] * 8, target_y[lvl_cntr] * 8, goal, 8, 8, 1);
+  // marked tile/goal
+  display.drawBitmap(target_x[lvl_cntr] * 8, target_y[lvl_cntr] * 8, target, 8, 8, 1);
 }
 
 
-//jesli wszystkie kroki wykonane i na pozycji mety
 bool level_finished() {
+  // checks if the player finished the level with the given number of steps and stands on the goal tile
   return pl_y/8 == target_y[lvl_cntr] && pl_x/8 == target_x[lvl_cntr] && X_iter == moves_to_finish[lvl_cntr];
 }
 
 
-//blokuj jesli wall
 bool can_go(unsigned char x, unsigned char y) {
+  // block the way if there is a wall
   i = levelx[x] & (0x01 << y);
   return (i == 0);
 }
 
 
-//rysuj lvle z level_maps
 void draw_level() {
   for (x = 0; x < 16; x++) {
     for (y = 0; y < 8; y++) {
